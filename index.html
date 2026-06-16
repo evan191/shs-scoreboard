@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHS Install Crew Scoreboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --border:    #21262d;
+    --green:     #3fb950;
+    --green-dim: #1a3a22;
+    --yellow:    #d29922;
+    --yellow-dim:#3a2e0a;
+    --red:       #f85149;
+    --red-dim:   #3a1212;
+    --blue:      #58a6ff;
+    --blue-dim:  #0d2a4a;
+    --purple:    #bc8cff;
+    --purple-dim:#2a1a4a;
+    --text:      #e6edf3;
+    --muted:     #7d8590;
+    --label:     #8b949e;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    padding: 24px 28px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* LOADING */
+  #loading-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    z-index: 999;
+  }
+  .loader-brand {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text);
+  }
+  .loader-brand span { color: var(--green); }
+  .loader-bar-bg {
+    width: 220px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .loader-bar-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    animation: load 1.6s ease forwards;
+  }
+  @keyframes load { from { width:0 } to { width:100% } }
+  .loader-status { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* CONFIG PANEL */
+  #config-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 998;
+    align-items: center;
+    justify-content: center;
+  }
+  #config-panel.show { display: flex; }
+  .config-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 32px;
+    width: 520px;
+    max-width: 95vw;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .config-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--green);
+  }
+  .config-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+  .config-desc a { color: var(--blue); }
+  .config-input-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--label); margin-bottom: 6px; }
+  .config-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-family: 'Barlow', sans-serif;
+    outline: none;
+  }
+  .config-input:focus { border-color: var(--green); }
+  .config-btn {
+    background: var(--green);
+    color: #0d1117;
+    border: none;
+    border-radius: 6px;
+    padding: 11px 24px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    align-self: flex-start;
+  }
+  .config-btn:hover { background: #4fd060; }
+  .config-demo-btn {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 11px 24px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+  }
+  .config-demo-btn:hover { border-color: var(--muted); color: var(--text); }
+  .config-btns { display: flex; gap: 10px; }
+  .config-note {
+    font-size: 0.72rem;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    line-height: 1.7;
+  }
+  .config-note code {
+    background: var(--border);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.78rem;
+    color: var(--blue);
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+  }
+  .brand-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 1.9rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+  .brand-name span { color: var(--green); }
+  .brand-sub { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 3px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .date-value { font-family: 'Barlow Condensed', sans-serif; font-size: 1.1rem; font-weight: 600; color: var(--text); }
+  .settings-btn {
+    background: var(--border);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-family: 'Barlow', sans-serif;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+  }
+  .settings-btn:hover { color: var(--text); background: var(--surface); }
+
+  /* STREAK */
+  .streak-banner {
+    background: linear-gradient(90deg, var(--green-dim), transparent);
+    border: 1px solid var(--green);
+    border-radius: 6px;
+    padding: 9px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .streak-label { font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--green); }
+  .streak-value { font-family: 'Barlow Condensed', sans-serif; font-size: 1.5rem; font-weight: 900; color: var(--text); }
+  .streak-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* GRID */
+  .grid-top { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .grid-mid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 14px; }
+  .grid-bot { display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 14px; margin-top: 14px; }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:8px 8px 0 0; }
+  .card.green::before  { background: var(--green); }
+  .card.yellow::before { background: var(--yellow); }
+  .card.blue::before   { background: var(--blue); }
+  .card.red::before    { background: var(--red); }
+  .card.purple::before { background: var(--purple); }
+
+  .card-eyebrow { font-size: 0.63rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
+  .card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 0.92rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--label); margin-top: -2px; }
+
+  .stat-row { display: flex; align-items: baseline; gap: 7px; }
+  .stat-value { font-family: 'Barlow Condensed', sans-serif; font-size: 3rem; font-weight: 900; line-height: 1; color: var(--text); }
+  .stat-value.green  { color: var(--green); }
+  .stat-value.yellow { color: var(--yellow); }
+  .stat-value.blue   { color: var(--blue); }
+  .stat-value.red    { color: var(--red); }
+  .stat-value.purple { color: var(--purple); }
+  .stat-unit { font-family: 'Barlow Condensed', sans-serif; font-size: 0.95rem; font-weight: 600; color: var(--muted); }
+
+  .progress-wrap { display: flex; flex-direction: column; gap: 4px; }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--muted); }
+  .progress-bar-bg { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .progress-bar-fill.green  { background: var(--green); }
+  .progress-bar-fill.yellow { background: var(--yellow); }
+  .progress-bar-fill.blue   { background: var(--blue); }
+  .progress-bar-fill.red    { background: var(--red); }
+  .progress-bar-fill.purple { background: var(--purple); }
+
+  .delta { display: inline-flex; align-items: center; gap: 3px; font-family: 'Barlow Condensed', sans-serif; font-size: 0.9rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+  .delta.up   { background: var(--green-dim);  color: var(--green); }
+  .delta.down { background: var(--red-dim);    color: var(--red); }
+  .delta.flat { background: var(--yellow-dim); color: var(--yellow); }
+
+  /* SERVICE CARDS (mid row) */
+  .svc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .svc-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:8px 8px 0 0; }
+  .svc-card.green::before  { background: var(--green); }
+  .svc-card.yellow::before { background: var(--yellow); }
+  .svc-card.blue::before   { background: var(--blue); }
+  .svc-card.purple::before { background: var(--purple); }
+  .svc-card.red::before    { background: var(--red); }
+
+  .svc-icon { font-size: 1.4rem; }
+  .svc-label { font-size: 0.63rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+  .svc-title { font-family: 'Barlow Condensed', sans-serif; font-size: 0.88rem; font-weight: 700; color: var(--label); text-transform: uppercase; margin-top: -2px; }
+  .svc-numbers { display: flex; align-items: baseline; gap: 5px; }
+  .svc-actual { font-family: 'Barlow Condensed', sans-serif; font-size: 2.2rem; font-weight: 900; line-height: 1; }
+  .svc-actual.green  { color: var(--green); }
+  .svc-actual.yellow { color: var(--yellow); }
+  .svc-actual.blue   { color: var(--blue); }
+  .svc-actual.purple { color: var(--purple); }
+  .svc-actual.red    { color: var(--red); }
+  .svc-goal { font-family: 'Barlow Condensed', sans-serif; font-size: 0.9rem; color: var(--muted); }
+  .svc-bar-bg { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .svc-bar-fill { height: 100%; border-radius: 3px; }
+  .svc-bar-fill.green  { background: var(--green); }
+  .svc-bar-fill.yellow { background: var(--yellow); }
+  .svc-bar-fill.blue   { background: var(--blue); }
+  .svc-bar-fill.purple { background: var(--purple); }
+  .svc-bar-fill.red    { background: var(--red); }
+  .svc-pct { font-size: 0.68rem; color: var(--muted); }
+
+  /* LOG TABLE */
+  .log-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .log-table th { font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 8px 7px 0; border-bottom: 1px solid var(--border); }
+  .log-table td { padding: 6px 8px 6px 0; color: var(--text); border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .log-badge.fast  { background: var(--green-dim);  color: var(--green); }
+  .log-badge.avg   { background: var(--yellow-dim); color: var(--yellow); }
+  .log-badge.slow  { background: var(--red-dim);    color: var(--red); }
+
+  /* YOY CHART */
+  .yoy-grid { display: flex; align-items: flex-end; gap: 5px; height: 72px; padding-top: 4px; }
+  .yoy-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .yoy-bar-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 60px; gap: 2px; }
+  .yoy-lv { font-family: 'Barlow Condensed', sans-serif; font-size: 0.66rem; font-weight: 700; color: var(--text); }
+  .yoy-bar { width: 100%; border-radius: 3px 3px 0 0; min-height: 3px; }
+  .yoy-bar.prev { background: var(--border); }
+  .yoy-bar.curr { background: var(--green); }
+  .yoy-bar.proj { background: var(--blue); opacity: 0.75; }
+  .yoy-month { font-size: 0.6rem; color: var(--muted); text-align: center; }
+  .yoy-legend { display: flex; gap: 10px; margin-top: 4px; }
+  .yoy-legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.65rem; color: var(--muted); }
+  .yoy-dot { width: 7px; height: 7px; border-radius: 2px; }
+
+  /* CHECKLIST */
+  .targets-list { display: flex; flex-direction: column; gap: 8px; }
+  .target-row { display: flex; align-items: center; gap: 8px; }
+  .target-icon { font-size: 0.9rem; width: 20px; text-align: center; flex-shrink: 0; }
+  .target-name { font-size: 0.75rem; color: var(--label); flex: 1; }
+  .target-val { font-family: 'Barlow Condensed', sans-serif; font-size: 0.92rem; font-weight: 700; color: var(--text); }
+  .target-check { font-size: 0.8rem; }
+
+  /* FOOTER */
+  footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; }
+  .footer-msg { font-family: 'Barlow Condensed', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+  .footer-msg span { color: var(--green); }
+  .footer-right { display: flex; align-items: center; gap: 12px; }
+  .footer-update { font-size: 0.67rem; color: var(--muted); }
+  .refresh-btn { background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; color: var(--muted); font-size: 0.7rem; cursor: pointer; font-family: 'Barlow', sans-serif; }
+  .refresh-btn:hover { border-color: var(--green); color: var(--green); }
+
+  .data-source-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 0.65rem; color: var(--muted);
+    background: var(--border); border-radius: 4px; padding: 3px 8px;
+  }
+  .data-source-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  .data-source-dot.demo { background: var(--yellow); animation: none; }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loader-brand">Senior Home <span>Solutions</span></div>
+  <div class="loader-bar-bg"><div class="loader-bar-fill"></div></div>
+  <div class="loader-status" id="load-status">Connecting to data…</div>
+</div>
+
+<!-- CONFIG PANEL -->
+<div id="config-panel">
+  <div class="config-box">
+    <div class="config-title">⚙️ Connect Your Google Sheet</div>
+    <div class="config-desc">
+      Paste your Google Sheets <strong>published CSV URL</strong> below and the board will pull live data every time it loads.<br><br>
+      Don't have one yet? Hit <strong>Load Demo</strong> to see the board with sample data first.
+    </div>
+    <div class="config-note">
+      <strong>How to get your URL:</strong><br>
+      1. Open your Google Sheet → <code>File → Share → Publish to web</code><br>
+      2. Choose your sheet tab → select <code>CSV</code> format → click <code>Publish</code><br>
+      3. Copy the URL and paste it below<br><br>
+      <strong>Sheet column order:</strong> See the setup guide tab in your sheet.
+    </div>
+    <div>
+      <div class="config-input-label">Google Sheets Published CSV URL</div>
+      <input class="config-input" id="sheet-url-input" type="text" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" />
+    </div>
+    <div class="config-btns">
+      <button class="config-btn" onclick="connectSheet()">Connect &amp; Load</button>
+      <button class="config-demo-btn" onclick="loadDemo()">Load Demo Data</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div>
+    <div class="brand-name">Senior Home <span>Solutions</span></div>
+    <div class="brand-sub">Install Crew Dashboard · Fenton, MI</div>
+  </div>
+  <div class="header-right">
+    <div id="data-badge" class="data-source-badge">
+      <div class="data-source-dot demo" id="data-dot"></div>
+      <span id="data-source-label">Demo Data</span>
+    </div>
+    <div class="date-value" id="week-label"></div>
+    <button class="settings-btn" onclick="showConfig()">⚙ Settings</button>
+  </div>
+</header>
+
+<!-- STREAK -->
+<div class="streak-banner">
+  <div class="streak-label">🔥 No-Callback Streak</div>
+  <div class="streak-value" id="streak-val">— Jobs</div>
+  <div style="flex:1"></div>
+  <div class="streak-label" style="margin-right:8px;" id="streak-best">All-Time Best: —</div>
+  <div class="streak-dot"></div>
+</div>
+
+<!-- TOP ROW: Core KPIs -->
+<div class="grid-top">
+
+  <div class="card green">
+    <div><div class="card-eyebrow">This Week</div><div class="card-title">Jobs Completed</div></div>
+    <div class="stat-row">
+      <div class="stat-value green" id="week-jobs">—</div>
+      <div class="stat-unit" id="week-jobs-goal">/ — goal</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta"><span>Weekly progress</span><span id="week-jobs-pct">—%</span></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill green" id="week-jobs-bar" style="width:0%"></div></div>
+    </div>
+    <div><span class="delta" id="week-jobs-delta">—</span></div>
+  </div>
+
+  <div class="card yellow">
+    <div><div class="card-eyebrow">Speed</div><div class="card-title">Avg Install Time</div></div>
+    <div class="stat-row">
+      <div class="stat-value yellow" id="avg-time">—</div>
+      <div class="stat-unit">hrs · target ≤ <span id="avg-time-target">—</span></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta"><span>Faster = better</span><span id="avg-time-rating">—</span></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="avg-time-bar" style="width:0%"></div></div>
+    </div>
+    <div><span class="delta" id="avg-time-delta">—</span></div>
+  </div>
+
+  <div class="card blue">
+    <div><div class="card-eyebrow">June 2026</div><div class="card-title">Monthly Installs</div></div>
+    <div class="stat-row">
+      <div class="stat-value blue" id="month-jobs">—</div>
+      <div class="stat-unit" id="month-jobs-goal">/ — goal</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta"><span>Month-to-date</span><span id="month-jobs-pct">—%</span></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill blue" id="month-jobs-bar" style="width:0%"></div></div>
+    </div>
+    <div><span class="delta" id="month-jobs-delta">—</span></div>
+  </div>
+
+  <div class="card green">
+    <div><div class="card-eyebrow">Year-Over-Year</div><div class="card-title">Revenue Growth</div></div>
+    <div class="stat-row">
+      <div class="stat-value green" id="yoy-growth">—</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-meta"><span id="yoy-target-label">Target: —</span><span id="yoy-status">—</span></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill green" id="yoy-bar" style="width:0%"></div></div>
+    </div>
+    <div><span class="delta up" id="yoy-delta">—</span></div>
+  </div>
+
+</div>
+
+<!-- MID ROW: Service Line Breakdown -->
+<div class="grid-mid">
+
+  <div class="svc-card green">
+    <div class="svc-icon">🏗️</div>
+    <div class="svc-label">YTD</div>
+    <div class="svc-title">Rental Ramps Installed</div>
+    <div class="svc-numbers">
+      <div class="svc-actual green" id="ramp-installs">—</div>
+      <div class="svc-goal" id="ramp-installs-goal">/ — goal</div>
+    </div>
+    <div class="svc-bar-bg"><div class="svc-bar-fill green" id="ramp-installs-bar" style="width:0%"></div></div>
+    <div class="svc-pct" id="ramp-installs-pct">—% of annual goal</div>
+  </div>
+
+  <div class="svc-card blue">
+    <div class="svc-icon">📋</div>
+    <div class="svc-label">YTD</div>
+    <div class="svc-title">Monthly Collections</div>
+    <div class="svc-numbers">
+      <div class="svc-actual blue" id="collections">—</div>
+      <div class="svc-goal" id="collections-goal">/ — goal</div>
+    </div>
+    <div class="svc-bar-bg"><div class="svc-bar-fill blue" id="collections-bar" style="width:0%"></div></div>
+    <div class="svc-pct" id="collections-pct">—% of annual goal</div>
+  </div>
+
+  <div class="svc-card yellow">
+    <div class="svc-icon">💰</div>
+    <div class="svc-label">YTD</div>
+    <div class="svc-title">Ramp Sales (New + Used)</div>
+    <div class="svc-numbers">
+      <div class="svc-actual yellow" id="ramp-sales">—</div>
+      <div class="svc-goal" id="ramp-sales-goal">/ — goal</div>
+    </div>
+    <div class="svc-bar-bg"><div class="svc-bar-fill yellow" id="ramp-sales-bar" style="width:0%"></div></div>
+    <div class="svc-pct" id="ramp-sales-pct">—% of annual goal</div>
+  </div>
+
+  <div class="svc-card purple">
+    <div class="svc-icon">🚿</div>
+    <div class="svc-label">YTD</div>
+    <div class="svc-title">Tub-to-Shower Conversions</div>
+    <div class="svc-numbers">
+      <div class="svc-actual purple" id="t2s">—</div>
+      <div class="svc-goal" id="t2s-goal">/ — goal</div>
+    </div>
+    <div class="svc-bar-bg"><div class="svc-bar-fill purple" id="t2s-bar" style="width:0%"></div></div>
+    <div class="svc-pct" id="t2s-pct">—% of annual goal</div>
+  </div>
+
+  <div class="svc-card red">
+    <div class="svc-icon">🔩</div>
+    <div class="svc-label">YTD</div>
+    <div class="svc-title">Grab Bars Installed</div>
+    <div class="svc-numbers">
+      <div class="svc-actual red" id="grab-bars">—</div>
+      <div class="svc-goal" id="grab-bars-goal">/ — goal</div>
+    </div>
+    <div class="svc-bar-bg"><div class="svc-bar-fill red" id="grab-bars-bar" style="width:0%"></div></div>
+    <div class="svc-pct" id="grab-bars-pct">—% of annual goal</div>
+  </div>
+
+</div>
+
+<!-- BOTTOM ROW: Log + Chart + Checklist -->
+<div class="grid-bot">
+
+  <!-- Recent Installs -->
+  <div class="card blue" style="border-top:3px solid var(--blue)">
+    <div><div class="card-eyebrow">Install Log</div><div class="card-title">Recent Jobs This Week</div></div>
+    <table class="log-table">
+      <thead><tr><th>Date</th><th>Job Type</th><th>City</th><th>Time</th><th>Speed</th></tr></thead>
+      <tbody id="log-tbody">
+        <tr><td colspan="5" style="color:var(--muted);font-size:0.75rem;">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- YOY Chart -->
+  <div class="card green" style="border-top:3px solid var(--green)">
+    <div><div class="card-eyebrow">Growth Trend</div><div class="card-title">Monthly Installs: 2025 vs 2026</div></div>
+    <div class="yoy-grid" id="yoy-chart"></div>
+    <div class="yoy-legend">
+      <div class="yoy-legend-item"><div class="yoy-dot" style="background:var(--green)"></div>2026 Actual</div>
+      <div class="yoy-legend-item"><div class="yoy-dot" style="background:var(--blue)"></div>2026 Projected</div>
+      <div class="yoy-legend-item"><div class="yoy-dot" style="background:var(--border)"></div>2025 Actual</div>
+    </div>
+  </div>
+
+  <!-- Checklist -->
+  <div class="card yellow" style="border-top:3px solid var(--yellow)">
+    <div><div class="card-eyebrow">This Week's Targets</div><div class="card-title">Crew Goals</div></div>
+    <div class="targets-list" id="targets-list"></div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-msg">Every install matters. <span>Speed. Quality. No callbacks.</span></div>
+  <div class="footer-right">
+    <div class="footer-update">Last refreshed: <span id="last-updated">—</span></div>
+    <button class="refresh-btn" onclick="refreshData()">↺ Refresh</button>
+  </div>
+</footer>
+
+<script>
+// ── DEMO DATA ──────────────────────────────────────────────────────────────
+const DEMO = {
+  streak: 14,
+  streakBest: 31,
+  weekJobs: 11, weekJobsGoal: 14, weekJobsLastWeek: 8,
+  avgTime: 2.4, avgTimeTarget: 3.0, avgTimeLastMonth: 2.8,
+  monthJobs: 38, monthJobsGoal: 55, monthJobsLastYear: 26,
+  yoyGrowth: 48, yoyTarget: 55,
+  // Service lines
+  rampInstalls: 198, rampInstallsGoal: 420,
+  collections: 1243, collectionsGoal: 2400,
+  rampSales: 34, rampSalesGoal: 80,
+  t2s: 11, t2sGoal: 30,
+  grabBars: 87, grabBarsGoal: 200,
+  // Recent log
+  log: [
+    { date:'Jun 16', type:'Modular Ramp',   city:'Grand Blanc', time:1.8, speed:'fast' },
+    { date:'Jun 16', type:'Grab Bars (3)',  city:'Fenton',      time:1.1, speed:'fast' },
+    { date:'Jun 13', type:'Stairlift',      city:'Flint',       time:3.2, speed:'avg'  },
+    { date:'Jun 12', type:'Tub-to-Shower',  city:'Brighton',    time:4.8, speed:'slow' },
+    { date:'Jun 12', type:'Modular Ramp',   city:'Davison',     time:2.1, speed:'fast' },
+  ],
+  // Monthly chart [month, 2025_actual, 2026_actual_or_null, 2026_proj_or_null]
+  chart: [
+    { m:'Jan', p25:22, a26:34,  proj:null },
+    { m:'Feb', p25:20, a26:31,  proj:null },
+    { m:'Mar', p25:29, a26:42,  proj:null },
+    { m:'Apr', p25:31, a26:48,  proj:null },
+    { m:'May', p25:34, a26:51,  proj:null },
+    { m:'Jun', p25:36, a26:38,  proj:55   },
+    { m:'Jul', p25:38, a26:null,proj:58   },
+    { m:'Aug', p25:40, a26:null,proj:60   },
+  ],
+  // Weekly checklist
+  targets: [
+    { icon:'🏗️', name:'Installs completed',   val:'11 / 14', status:'yellow' },
+    { icon:'⚡', name:'Avg time ≤ 3.0 hrs',   val:'2.4 hrs', status:'green'  },
+    { icon:'📞', name:'Zero callbacks',        val:'0 this week', status:'green' },
+    { icon:'🗺️', name:'Miles driven ≤ 800',   val:'612 mi',  status:'green'  },
+    { icon:'⭐', name:'5-star reviews (month)',val:'4 / 6',   status:'yellow' },
+  ]
+};
+
+// ── SHEET PARSING ──────────────────────────────────────────────────────────
+// Expected CSV row structure (one key=value pair per row):
+// key,value
+// streak,14
+// streak_best,31
+// ...etc
+function parseSheetCSV(csv) {
+  const lines = csv.trim().split('\n').slice(1); // skip header
+  const data = {};
+  lines.forEach(line => {
+    const cols = line.split(',');
+    if (cols.length >= 2) {
+      const key = cols[0].trim();
+      const val = cols.slice(1).join(',').trim().replace(/^"|"$/g,'');
+      data[key] = val;
+    }
+  });
+  return data;
+}
+
+function mapSheetToData(raw) {
+  // Helper: parse number with fallback
+  const n = (k, fb) => parseFloat(raw[k]) || fb;
+  const s = (k, fb) => raw[k] || fb;
+
+  return {
+    streak: n('streak', DEMO.streak),
+    streakBest: n('streak_best', DEMO.streakBest),
+    weekJobs: n('week_jobs', DEMO.weekJobs),
+    weekJobsGoal: n('week_jobs_goal', DEMO.weekJobsGoal),
+    weekJobsLastWeek: n('week_jobs_last_week', DEMO.weekJobsLastWeek),
+    avgTime: n('avg_time', DEMO.avgTime),
+    avgTimeTarget: n('avg_time_target', DEMO.avgTimeTarget),
+    avgTimeLastMonth: n('avg_time_last_month', DEMO.avgTimeLastMonth),
+    monthJobs: n('month_jobs', DEMO.monthJobs),
+    monthJobsGoal: n('month_jobs_goal', DEMO.monthJobsGoal),
+    monthJobsLastYear: n('month_jobs_last_year', DEMO.monthJobsLastYear),
+    yoyGrowth: n('yoy_growth', DEMO.yoyGrowth),
+    yoyTarget: n('yoy_target', DEMO.yoyTarget),
+    rampInstalls: n('ramp_installs', DEMO.rampInstalls),
+    rampInstallsGoal: n('ramp_installs_goal', DEMO.rampInstallsGoal),
+    collections: n('collections', DEMO.collections),
+    collectionsGoal: n('collections_goal', DEMO.collectionsGoal),
+    rampSales: n('ramp_sales', DEMO.rampSales),
+    rampSalesGoal: n('ramp_sales_goal', DEMO.rampSalesGoal),
+    t2s: n('t2s', DEMO.t2s),
+    t2sGoal: n('t2s_goal', DEMO.t2sGoal),
+    grabBars: n('grab_bars', DEMO.grabBars),
+    grabBarsGoal: n('grab_bars_goal', DEMO.grabBarsGoal),
+    log: DEMO.log,   // log rows require a second sheet tab — fall back to demo
+    chart: DEMO.chart,
+    targets: DEMO.targets,
+  };
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function pct(actual, goal) { return Math.min(Math.round((actual / goal) * 100), 100); }
+function colorForPct(p) { return p >= 80 ? 'green' : p >= 50 ? 'yellow' : 'red'; }
+
+function renderDelta(el, val, unit, dir) {
+  // dir: 'up_good' or 'down_good'
+  const positive = dir === 'up_good' ? val >= 0 : val <= 0;
+  el.className = 'delta ' + (val === 0 ? 'flat' : positive ? 'up' : 'down');
+  const arrow = val > 0 ? '▲' : val < 0 ? '▼' : '●';
+  el.textContent = `${arrow} ${Math.abs(val)}${unit}`;
+}
+
+function renderProgressBar(barId, pctId, actual, goal, colorClass) {
+  const p = pct(actual, goal);
+  document.getElementById(barId).style.width = p + '%';
+  document.getElementById(barId).className = 'progress-bar-fill ' + (colorClass || colorForPct(p));
+  if (pctId) document.getElementById(pctId).textContent = p + '%';
+}
+
+function renderSvcCard(prefix, actual, goal, color) {
+  document.getElementById(prefix).textContent = actual.toLocaleString();
+  document.getElementById(prefix + '-goal').textContent = '/ ' + goal.toLocaleString() + ' goal';
+  const p = pct(actual, goal);
+  document.getElementById(prefix + '-bar').style.width = p + '%';
+  document.getElementById(prefix + '-bar').className = 'svc-bar-fill ' + color;
+  document.getElementById(prefix + '-pct').textContent = p + '% of annual goal';
+}
+
+function renderLog(log) {
+  const tbody = document.getElementById('log-tbody');
+  tbody.innerHTML = log.map(r => `
+    <tr>
+      <td>${r.date}</td>
+      <td>${r.type}</td>
+      <td>${r.city}</td>
+      <td>${r.time} hrs</td>
+      <td><span class="log-badge ${r.speed}">${r.speed === 'fast' ? 'Fast' : r.speed === 'avg' ? 'Avg' : 'Long'}</span></td>
+    </tr>
+  `).join('');
+}
+
+function renderChart(chart) {
+  const maxVal = Math.max(...chart.flatMap(c => [c.p25, c.a26 || 0, c.proj || 0]));
+  const scale = (v) => Math.round((v / maxVal) * 58);
+  document.getElementById('yoy-chart').innerHTML = chart.map(c => {
+    const curr = c.a26 ? `<div class="yoy-lv">${c.a26}</div><div class="yoy-bar curr" style="height:${scale(c.a26)}px"></div>` : '';
+    const proj = c.proj && !c.a26 ? `<div class="yoy-lv" style="color:var(--blue)">${c.proj}</div><div class="yoy-bar proj" style="height:${scale(c.proj)}px"></div>` :
+                 c.proj && c.a26  ? `<div class="yoy-bar proj" style="height:${scale(c.proj) - scale(c.a26)}px;opacity:0.4"></div>` : '';
+    const monthColor = c.proj && !c.a26 ? 'color:var(--blue)' : '';
+    return `
+      <div class="yoy-col">
+        <div class="yoy-bar-wrap">
+          ${proj}${curr}
+          <div class="yoy-bar prev" style="height:${scale(c.p25)}px"></div>
+        </div>
+        <div class="yoy-month" style="${monthColor}">${c.m}${c.proj && c.a26 ? ' ▶' : ''}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderTargets(targets) {
+  document.getElementById('targets-list').innerHTML = targets.map(t => {
+    const check = t.status === 'green' ? '✅' : t.status === 'yellow' ? '🟡' : '🔴';
+    return `<div class="target-row">
+      <div class="target-icon">${t.icon}</div>
+      <div class="target-name">${t.name}</div>
+      <div class="target-val">${t.val}</div>
+      <div class="target-check">${check}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(d) {
+  // Header
+  const now = new Date();
+  document.getElementById('week-label').textContent = now.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  document.getElementById('last-updated').textContent = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+
+  // Streak
+  document.getElementById('streak-val').textContent = `${d.streak} Jobs`;
+  document.getElementById('streak-best').textContent = `All-Time Best: ${d.streakBest}`;
+
+  // Week jobs
+  document.getElementById('week-jobs').textContent = d.weekJobs;
+  document.getElementById('week-jobs-goal').textContent = `/ ${d.weekJobsGoal} goal`;
+  renderProgressBar('week-jobs-bar', 'week-jobs-pct', d.weekJobs, d.weekJobsGoal, null);
+  renderDelta(document.getElementById('week-jobs-delta'), d.weekJobs - d.weekJobsLastWeek, ' vs last week', 'up_good');
+
+  // Avg time
+  document.getElementById('avg-time').textContent = d.avgTime;
+  document.getElementById('avg-time-target').textContent = d.avgTimeTarget;
+  const timeGood = d.avgTime <= d.avgTimeTarget;
+  document.getElementById('avg-time-rating').textContent = timeGood ? '✓ Under target' : '⚠ Over target';
+  const timePct = Math.min(Math.round((d.avgTimeTarget / d.avgTime) * 100), 100);
+  document.getElementById('avg-time-bar').style.width = timePct + '%';
+  document.getElementById('avg-time-bar').className = 'progress-bar-fill ' + (timeGood ? 'green' : 'red');
+  renderDelta(document.getElementById('avg-time-delta'), +(d.avgTimeLastMonth - d.avgTime).toFixed(1), ' hrs faster than last month', 'up_good');
+
+  // Month jobs
+  document.getElementById('month-jobs').textContent = d.monthJobs;
+  document.getElementById('month-jobs-goal').textContent = `/ ${d.monthJobsGoal} goal`;
+  renderProgressBar('month-jobs-bar', 'month-jobs-pct', d.monthJobs, d.monthJobsGoal, null);
+  renderDelta(document.getElementById('month-jobs-delta'), d.monthJobs - d.monthJobsLastYear, ' vs same month last year', 'up_good');
+
+  // YOY
+  document.getElementById('yoy-growth').textContent = `+${d.yoyGrowth}%`;
+  document.getElementById('yoy-target-label').textContent = `Target: +${d.yoyTarget}%`;
+  const yoyOnTrack = d.yoyGrowth >= d.yoyTarget * 0.85;
+  document.getElementById('yoy-status').textContent = yoyOnTrack ? 'On Track ✓' : 'Behind ⚠';
+  document.getElementById('yoy-bar').style.width = Math.min(Math.round((d.yoyGrowth / d.yoyTarget) * 100), 100) + '%';
+  const yoyDelta = document.getElementById('yoy-delta');
+  yoyDelta.className = 'delta up';
+  yoyDelta.textContent = yoyOnTrack ? '▲ Tracking to target' : '▼ Needs attention';
+
+  // Service lines
+  renderSvcCard('ramp-installs', d.rampInstalls, d.rampInstallsGoal, 'green');
+  renderSvcCard('collections',   d.collections,  d.collectionsGoal,  'blue');
+  renderSvcCard('ramp-sales',    d.rampSales,     d.rampSalesGoal,    'yellow');
+  renderSvcCard('t2s',           d.t2s,           d.t2sGoal,          'purple');
+  renderSvcCard('grab-bars',     d.grabBars,      d.grabBarsGoal,     'red');
+
+  // Log, chart, targets
+  renderLog(d.log);
+  renderChart(d.chart);
+  renderTargets(d.targets);
+}
+
+// ── FETCH & CONNECT ────────────────────────────────────────────────────────
+let currentData = null;
+
+async function fetchSheet(url) {
+  const proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://thingproxy.freeboard.io/fetch/${url}`,
+  ];
+  let lastErr;
+  for (const proxyUrl of proxies) {
+    try {
+      const res = await fetch(proxyUrl, { cache: 'no-store' });
+      if (res.ok) {
+        const text = await res.text();
+        // Sanity check: must look like CSV with our keys
+        if (text.includes('streak') || text.includes('key')) return text;
+      }
+    } catch(e) { lastErr = e; }
+  }
+  throw lastErr || new Error('All proxies failed');
+}
+
+async function connectSheet() {
+  const url = document.getElementById('sheet-url-input').value.trim();
+  if (!url) { alert('Please paste your Google Sheets URL first.'); return; }
+  localStorage.setItem('shs_sheet_url', url);
+  document.getElementById('config-panel').classList.remove('show');
+  await refreshData(url);
+}
+
+function loadDemo() {
+  localStorage.removeItem('shs_sheet_url');
+  document.getElementById('config-panel').classList.remove('show');
+  currentData = DEMO;
+  renderAll(DEMO);
+  setDataSource(false);
+}
+
+function showConfig() {
+  const saved = localStorage.getItem('shs_sheet_url');
+  if (saved) document.getElementById('sheet-url-input').value = saved;
+  document.getElementById('config-panel').classList.add('show');
+}
+
+function setDataSource(live) {
+  document.getElementById('data-dot').className = 'data-source-dot' + (live ? '' : ' demo');
+  document.getElementById('data-source-label').textContent = live ? 'Live · Google Sheets' : 'Demo Data';
+}
+
+async function refreshData(urlOverride) {
+  const url = urlOverride || localStorage.getItem('shs_sheet_url');
+  document.getElementById('load-status').textContent = 'Fetching sheet data…';
+  if (!url) {
+    loadDemo();
+    return;
+  }
+  try {
+    const csv = await fetchSheet(url);
+    const raw = parseSheetCSV(csv);
+    const d = mapSheetToData(raw);
+    currentData = d;
+    renderAll(d);
+    setDataSource(true);
+  } catch (e) {
+    console.error(e);
+    currentData = DEMO;
+    renderAll(DEMO);
+    setDataSource(false);
+    alert('Could not load sheet data — showing demo data.\n\nMake sure your sheet is published as CSV and the URL is correct.');
+  }
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+const SHEET_URL_DEFAULT = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTuexIO9jG1ofC5TOg8aAjdqYVf8hNX5WBmJrOq_Ydhq9FAV-eTKAnS2pl-isxt-9fkJPP5dsFfZt0R/pub?output=csv';
+
+window.addEventListener('load', async () => {
+  // Auto-seed your sheet URL if nothing saved yet
+  if (!localStorage.getItem('shs_sheet_url')) {
+    localStorage.setItem('shs_sheet_url', SHEET_URL_DEFAULT);
+  }
+  const saved = localStorage.getItem('shs_sheet_url');
+  document.getElementById('load-status').textContent = 'Loading your sheet…';
+  setTimeout(async () => {
+    document.getElementById('loading-screen').style.display = 'none';
+    await refreshData(saved);
+  }, 1800);
+});
+
+// Auto-refresh every 60 seconds if live
+setInterval(() => {
+  if (localStorage.getItem('shs_sheet_url')) refreshData();
+}, 60000);
+</script>
+</body>
+</html>
